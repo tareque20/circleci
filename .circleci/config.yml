@@ -1,20 +1,20 @@
-version: 2
+version: 2.1
 jobs:
-  build:
-    docker:
-      - image: circleci/node:7.10
+  bar:
+    machine: true
     steps:
       - checkout
-      - run: 
-        name: Running tests
-        command: echo "Test done"
-
+      - run:
+          command: echo "building"
+      - run:
+          command: echo "testing"
 workflows:
-  jobs:
-    - build:
-        pre-steps:
-          - run:
-              command: echo "install custom dependency"
-        post-steps:
-          - run:
-              command: echo "upload artifact to s3"
+  build:
+    jobs:
+      - bar:
+          pre-steps:
+            - run:
+                command: echo "install custom dependency"
+          post-steps:
+            - run:
+                command: echo "upload artifact to s3"
