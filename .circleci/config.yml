@@ -1,10 +1,18 @@
 version: 2.1
 jobs:
-  build:
+  build-job:
+    parameters:
+      preinstall-foo:
+        type: boolean
+        default: false
     docker:
       - image: circleci/node:7.10
     steps:
       - checkout
+      - when:
+          condition: << parameters.preinstall-foo >>
+          steps:
+            - run: echo "preinstall"
       - run:
           name: Running tests
           command: echo "Test done"
@@ -12,7 +20,8 @@ jobs:
 workflows:
   workflow-1:
     jobs:
-      - build:
+      - build-job:
+          preinstall-foo: false
           pre-steps:
             - run:
                 command: echo "install custom dependency"
@@ -20,3 +29,13 @@ workflows:
           post-steps:
             - run:
                 command: echo "upload artifact to s3"
+      - build-job:
+          preinstall-foo: true
+          pre-steps:
+            - run:
+                command: echo "install custom dependency"
+              
+          post-steps:
+            - run:
+                command: echo "upload artifact to s3"
+                
