@@ -5,17 +5,18 @@ jobs:
       - image: circleci/node:7.10
     steps:
       - checkout
-      - run: 
-        name: Running tests
-        command: echo "Test done"
+      - run:
+          name: Running tests
+          command: echo "Test done"
 
 workflows:
-  workflow:
+  workflow-1:
     jobs:
       - build:
           pre-steps:
             - run:
                 command: echo "install custom dependency"
+              
           post-steps:
             - run:
                 command: echo "upload artifact to s3"
