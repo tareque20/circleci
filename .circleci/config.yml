@@ -9,3 +9,13 @@ jobs:
         name: Running tests
         command: echo "Test done"
 
+workflows:
+  build:
+    jobs:
+      - build:
+          pre-steps:
+            - run:
+                command: echo "install custom dependency"
+          post-steps:
+            - run:
+                command: echo "upload artifact to s3"
