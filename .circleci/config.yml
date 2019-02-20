@@ -1,41 +1,59 @@
-version: 2
+version: 2.1
+executors:
+  node:
+    docker:
+      - image: 'circleci/node:8'
+    shell: /bin/bash
+    working_directory: ~/app
 jobs:
-  one:
-    docker:
-      - image: circleci/node:7.10
+  build:
+    executor: node
     steps:
       - checkout
-      - run: echo "A first hello"
-      - run: mkdir -p my_workspace
-      - run: echo "Trying out workspaces" > my_workspace/echo-output
-      - persist_to_workspace:
-          # Must be an absolute path, or relative path from working_directory
-          root: my_workspace
-          # Must be relative path from root
+      - restore_cache:
+          keys:
+            # Find a cache corresponding to this specific package-lock.json checksum
+            # when this file is changed, this key will fail
+            - v1-npm-deps-{{ checksum "package-lock.json" }}
+            # Find the most recently generated cache used from any branch
+            - v1-npm-deps-
+      - run:
+          name: Install Node.js dependencies with Npm
+          command: npm install
+      - save_cache:
           paths:
-            - echo-output      
-  two:
-    docker:
-      - image: circleci/node:7.10
+            - ./node_modules
+          key: v1-npm-deps-{{ checksum "package-lock.json" }}
+      - persist_to_workspace:
+          root: ~/app
+          paths:
+            - .
+  test:
+    executor: node
     steps:
-      - checkout
-      - run: echo "A more familiar hi"  
       - attach_workspace:
-          # Must be absolute path or relative path from working_directory
-          at: my_workspace
-      - run: 
-          name: Compare the result
+          at: ~/app
+      - run:
+          name: Test
+          command: npm test
+      - run:
+          name: Save test results
           command: |
-            if [[ $(cat my_workspace/echo-output) == "Trying out workspaces" ]]; then
-              echo "It worked!";
-            else
-              echo "Nope!"; exit 1
-            fi
+            npm install nyc mocha-junit-reporter
+            mkdir ~/reports
+            ./node_modules/.bin/nyc ./node_modules/.bin/mocha spec.js --recursive --timeout=10000 --exit --reporter mocha-junit-reporter --reporter-options mochaFile=~/reports/mocha/test-results.xml
+          environment:
+            MOCHA_FILE: ~/reports/test-results.xml
+          when: always
+      - store_test_results:
+          path: ~/reports
+      - store_artifacts:
+          path: ~/reports
 workflows:
   version: 2
-  one_and_two:
+  build_and_test:
     jobs:
-      - one
-      - two:
+      - build
+      - test:
           requires:
-            - one
+            - build
